@@ -1,0 +1,33 @@
+{
+  "monitoring": {
+    "ping_interval_seconds": 30,
+    "speed_test_interval_minutes": 15,
+    "connectivity_timeout_seconds": 10,
+    "max_retries": 3
+  },
+  "targets": {
+    "ping_hosts": [
+      "8.8.8.8",
+      "1.1.1.1", 
+      "google.com",
+      "cloudflare.com"
+    ],
+    "dns_servers": [
+      "8.8.8.8",
+      "1.1.1.1"
+    ]
+  },
+  "database": {
+    "file": "uptime_monitor.db",
+    "retention_days": 90
+  },
+  "alerts": {
+    "outage_threshold_seconds": 60,
+    "slow_speed_threshold_mbps": 10
+  },
+  "server": {
+    "host": "localhost",
+    "port": 8000,
+    "debug": true
+  }
+}
