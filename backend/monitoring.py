@@ -7,12 +7,12 @@ import os
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional
 import httpx
-import speedtest
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, delete
 from .models import ConnectivityTest, SpeedTest, OutageEvent, MonitoringStats
 from .database import AsyncSessionLocal
 import logging
+import pytz
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -26,6 +26,13 @@ class InternetMonitor:
         self.targets = config.get('targets', {})
         self.is_running = False
         self.current_outage: Optional[OutageEvent] = None
+        # Set up Arizona timezone
+        self.arizona_tz = pytz.timezone('America/Phoenix')
+    
+    def get_arizona_time(self) -> datetime:
+        """Get current time in Arizona timezone"""
+        utc_now = datetime.utcnow()
+        return utc_now.replace(tzinfo=pytz.UTC).astimezone(self.arizona_tz)
         
     async def start_monitoring(self):
         """Start the monitoring service"""
@@ -87,7 +94,7 @@ class InternetMonitor:
             success = result.returncode == 0
             
             return {
-                'timestamp': datetime.utcnow(),
+                'timestamp': self.get_arizona_time(),
                 'is_connected': success,
                 'latency_ms': latency_ms if success else None,
                 'target_host': host,
@@ -96,7 +103,7 @@ class InternetMonitor:
             }
         except Exception as e:
             return {
-                'timestamp': datetime.utcnow(),
+                'timestamp': self.get_arizona_time(),
                 'is_connected': False,
                 'latency_ms': None,
                 'target_host': host,
@@ -130,7 +137,7 @@ class InternetMonitor:
             latency_ms = (end_time - start_time) * 1000
             
             return {
-                'timestamp': datetime.utcnow(),
+                'timestamp': self.get_arizona_time(),
                 'is_connected': True,
                 'latency_ms': latency_ms,
                 'target_host': dns_server,
@@ -139,7 +146,7 @@ class InternetMonitor:
             }
         except Exception as e:
             return {
-                'timestamp': datetime.utcnow(),
+                'timestamp': self.get_arizona_time(),
                 'is_connected': False,
                 'latency_ms': None,
                 'target_host': dns_server,
@@ -162,30 +169,52 @@ class InternetMonitor:
                 await asyncio.sleep(interval_seconds)
     
     async def _run_speed_test(self) -> Dict:
-        """Run internet speed test"""
+        """Run internet speed test using speedtest-cli for accurate measurements"""
         try:
-            st = speedtest.Speedtest()
+            # Use speedtest-cli for accurate speed testing
+            import speedtest_cli
+            
+            logger.info("Starting accurate speed test with speedtest-cli...")
+            
+            # Create speedtest instance
+            st = speedtest_cli.Speedtest()
+            
+            # Get best server
+            logger.info("Finding best server...")
             st.get_best_server()
             
+            # Run download test
+            logger.info("Running download test...")
             download_speed = st.download() / 1_000_000  # Convert to Mbps
+            
+            # Run upload test
+            logger.info("Running upload test...")
             upload_speed = st.upload() / 1_000_000      # Convert to Mbps
+            
+            # Get ping result
             ping_result = st.results.ping
             
+            # Get server information
             server_info = st.results.server
             
-            return {
-                'timestamp': datetime.utcnow(),
-                'download_mbps': download_speed,
-                'upload_mbps': upload_speed,
-                'ping_ms': ping_result,
+            result = {
+                'timestamp': self.get_arizona_time(),
+                'download_mbps': round(download_speed, 2),
+                'upload_mbps': round(upload_speed, 2),
+                'ping_ms': round(ping_result, 1),
                 'server_name': server_info.get('sponsor', 'Unknown'),
                 'server_location': f"{server_info.get('name', 'Unknown')}, {server_info.get('country', 'Unknown')}",
                 'success': True,
                 'error_message': None
             }
+            
+            logger.info(f"Speed test completed: {result['download_mbps']} Mbps down, {result['upload_mbps']} Mbps up, {result['ping_ms']} ms ping")
+            return result
+                    
         except Exception as e:
+            logger.error(f"Speed test failed: {e}")
             return {
-                'timestamp': datetime.utcnow(),
+                'timestamp': self.get_arizona_time(),
                 'download_mbps': None,
                 'upload_mbps': None,
                 'ping_ms': None,
@@ -212,7 +241,7 @@ class InternetMonitor:
     async def _check_outage_status(self, result: Dict):
         """Check if we're in an outage and manage outage events"""
         is_connected = result['is_connected']
-        now = datetime.utcnow()
+        now = self.get_arizona_time()
         
         async with AsyncSessionLocal() as session:
             if not is_connected and self.current_outage is None:
@@ -252,7 +281,7 @@ class InternetMonitor:
     
     async def _calculate_hourly_stats(self):
         """Calculate hourly statistics"""
-        now = datetime.utcnow()
+        now = self.get_arizona_time()
         hour_start = now.replace(minute=0, second=0, microsecond=0)
         
         async with AsyncSessionLocal() as session:
@@ -285,7 +314,7 @@ class InternetMonitor:
     
     async def _calculate_daily_stats(self):
         """Calculate daily statistics"""
-        now = datetime.utcnow()
+        now = self.get_arizona_time()
         day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
         
         # Similar logic to hourly stats but for daily period
@@ -308,7 +337,7 @@ class InternetMonitor:
         """Clean up old data based on retention policy"""
         # Get retention policy from config
         retention_days = self.config.get('database', {}).get('retention_days', 90)
-        cutoff_date = datetime.utcnow() - timedelta(days=retention_days)
+        cutoff_date = self.get_arizona_time() - timedelta(days=retention_days)
         
         logger.info(f"Starting database cleanup - removing data older than {retention_days} days (before {cutoff_date})")
         

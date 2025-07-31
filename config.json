@@ -29,5 +29,12 @@
     "host": "localhost",
     "port": 8000,
     "debug": true
+  },
+  "speed_test": {
+    "method": "speedtest-cli",
+    "timeout_seconds": 60,
+    "server_selection": "auto",
+    "fallback_method": "http_calibrated",
+    "calibration_factor": 15.0
   }
 }

@@ -6,6 +6,7 @@ from sqlalchemy import select, and_, desc, func, delete
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional
 import json
+import pytz
 from .database import get_database, init_database
 from .models import ConnectivityTest, SpeedTest, OutageEvent, MonitoringStats
 from pydantic import BaseModel
@@ -20,6 +21,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Set up Arizona timezone
+arizona_tz = pytz.timezone('America/Phoenix')
+
+def get_arizona_time() -> datetime:
+    """Get current time in Arizona timezone"""
+    utc_now = datetime.utcnow()
+    return utc_now.replace(tzinfo=pytz.UTC).astimezone(arizona_tz)
 
 # Pydantic models for API responses
 class ConnectivityTestResponse(BaseModel):
@@ -87,7 +96,7 @@ async def root():
 @app.get("/api/dashboard", response_model=DashboardStats)
 async def get_dashboard_stats(db: AsyncSession = Depends(get_database)):
     """Get dashboard statistics"""
-    now = datetime.utcnow()
+    now = get_arizona_time()
     yesterday = now - timedelta(days=1)
     
     # Get connectivity tests from last 24 hours
@@ -151,7 +160,7 @@ async def get_connectivity_tests(
     db: AsyncSession = Depends(get_database)
 ):
     """Get connectivity test history"""
-    since = datetime.utcnow() - timedelta(hours=hours)
+    since = get_arizona_time() - timedelta(hours=hours)
     
     query = select(ConnectivityTest).where(
         ConnectivityTest.timestamp >= since
@@ -168,7 +177,7 @@ async def get_speed_tests(
     db: AsyncSession = Depends(get_database)
 ):
     """Get speed test history"""
-    since = datetime.utcnow() - timedelta(hours=hours)
+    since = get_arizona_time() - timedelta(hours=hours)
     
     query = select(SpeedTest).where(
         SpeedTest.timestamp >= since
@@ -185,7 +194,7 @@ async def get_outages(
     db: AsyncSession = Depends(get_database)
 ):
     """Get outage history"""
-    since = datetime.utcnow() - timedelta(days=days)
+    since = get_arizona_time() - timedelta(days=days)
     
     query = select(OutageEvent).where(
         OutageEvent.start_time >= since
@@ -202,7 +211,7 @@ async def get_uptime_chart_data(
     db: AsyncSession = Depends(get_database)
 ):
     """Get uptime data for charts"""
-    since = datetime.utcnow() - timedelta(hours=hours)
+    since = get_arizona_time() - timedelta(hours=hours)
     
     # Get connectivity tests for the period
     query = select(ConnectivityTest).where(
@@ -227,7 +236,7 @@ async def get_speed_chart_data(
     db: AsyncSession = Depends(get_database)
 ):
     """Get speed data for charts"""
-    since = datetime.utcnow() - timedelta(hours=hours)
+    since = get_arizona_time() - timedelta(hours=hours)
     
     if metric == "download":
         value_column = SpeedTest.download_mbps
@@ -264,7 +273,7 @@ async def generate_report(
     db: AsyncSession = Depends(get_database)
 ):
     """Generate a comprehensive monitoring report"""
-    since = datetime.utcnow() - timedelta(days=days)
+    since = get_arizona_time() - timedelta(days=days)
     
     # Get all data for the period
     connectivity_query = select(ConnectivityTest).where(ConnectivityTest.timestamp >= since)
@@ -303,7 +312,7 @@ async def generate_report(
     return {
         "period": {
             "start": since.isoformat(),
-            "end": datetime.utcnow().isoformat(),
+            "end": get_arizona_time().isoformat(),
             "days": days
         },
         "summary": {
@@ -386,7 +395,7 @@ async def manual_database_cleanup():
             config = json.load(f)
         
         retention_days = config.get('database', {}).get('retention_days', 90)
-        cutoff_date = datetime.utcnow() - timedelta(days=retention_days)
+        cutoff_date = get_arizona_time() - timedelta(days=retention_days)
         
         # Get database session
         async for db in get_database():
@@ -451,7 +460,7 @@ async def get_health_status():
         # Get a database session
         async for db in get_database():
             # Check for recent connectivity tests (within last 5 minutes)
-            recent_time = datetime.utcnow() - timedelta(minutes=5)
+            recent_time = get_arizona_time() - timedelta(minutes=5)
             
             connectivity_query = select(ConnectivityTest).where(
                 ConnectivityTest.timestamp >= recent_time
@@ -473,7 +482,7 @@ async def get_health_status():
                     "connected": True,
                     "message": "Database connection successful"
                 },
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": get_arizona_time().isoformat()
             }
             
     except Exception as e:
@@ -488,5 +497,5 @@ async def get_health_status():
                 "connected": False,
                 "message": f"Database connection failed: {str(e)}"
             },
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": get_arizona_time().isoformat()
         }
