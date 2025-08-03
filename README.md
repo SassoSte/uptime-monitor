@@ -1,6 +1,6 @@
 # 🚀 UpTime Monitor - Professional Internet Monitoring System
 
-A comprehensive, production-ready internet uptime and bandwidth monitoring application with accurate speed testing and a beautiful Notion-style interface.
+A comprehensive, production-ready internet uptime and bandwidth monitoring application with accurate speed testing, a beautiful Notion-style interface, and **mobile app support**.
 
 ## ✨ **Key Features**
 
@@ -11,6 +11,7 @@ A comprehensive, production-ready internet uptime and bandwidth monitoring appli
 - **📈 Historical Analytics**: Long-term performance trends and reporting
 - **🚨 Outage Detection**: Automatic detection and logging of internet issues
 - **📱 Responsive Design**: Works on desktop and mobile devices
+- **📱 Mobile App**: React Native app with push notifications and offline support
 
 ## 🎯 **Recent Major Improvements**
 
@@ -25,6 +26,12 @@ A comprehensive, production-ready internet uptime and bandwidth monitoring appli
 - ✅ **Arizona Time**: All timestamps display in local MST/MDT
 - ✅ **Automatic DST**: Handles daylight saving time transitions
 - ✅ **User-Friendly**: No more UTC timezone confusion
+
+### Mobile App Features
+- ✅ **Real-time Dashboard**: Live monitoring on your phone
+- ✅ **Push Notifications**: Instant alerts for outages and issues
+- ✅ **Offline Support**: Cached data when away from home
+- ✅ **Arizona Timezone**: Consistent time display across platforms
 
 ## 🚀 **Quick Start**
 
@@ -71,6 +78,27 @@ A comprehensive, production-ready internet uptime and bandwidth monitoring appli
    - 📚 **API Docs**: http://localhost:8000/docs
    - 🔧 **API Health**: http://localhost:8000/api/health
 
+## 📱 **Mobile App Setup**
+
+### Quick Mobile Setup
+```bash
+# Set up the mobile app
+./setup_mobile.sh
+
+# Start the mobile app
+cd mobile
+npm run ios    # For iOS (macOS only)
+npm run android # For Android
+```
+
+### Mobile App Features
+- **Real-time Dashboard**: Monitor your internet from anywhere
+- **Push Notifications**: Get alerts for outages and performance issues
+- **Offline Support**: View cached data when away from home
+- **Arizona Timezone**: Consistent time display with your web dashboard
+
+For detailed mobile setup instructions, see [mobile/README.md](mobile/README.md).
+
 ## 🏗️ **Architecture**
 
 ### Backend (Python/FastAPI)
@@ -85,6 +113,12 @@ A comprehensive, production-ready internet uptime and bandwidth monitoring appli
 - **Tailwind CSS**: Utility-first styling
 - **Chart.js**: Data visualization
 - **Notion-style Design**: Clean, professional interface
+
+### Mobile App (React Native)
+- **React Native**: Cross-platform mobile development
+- **Push Notifications**: Real-time alerts
+- **Offline Storage**: Local data caching
+- **Native Performance**: Optimized for mobile devices
 
 ### Monitoring Features
 - **Connectivity Tests**: Ping and DNS every 30 seconds
@@ -167,9 +201,18 @@ UpTimeMonitor/
 │   ├── components/         # UI components
 │   ├── pages/             # Application pages
 │   └── App.js             # Main application
+├── mobile/                 # React Native mobile app
+│   ├── src/               # Mobile app source code
+│   ├── src/screens/       # Mobile app screens
+│   ├── src/services/      # Mobile app services
+│   └── README.md          # Mobile app documentation
 ├── config.json            # Application configuration
 ├── requirements.txt       # Python dependencies
 ├── package.json           # Node.js dependencies
+├── start_app.sh           # Startup script
+├── start_app_quiet.sh     # Quiet startup script
+├── stop_app.sh            # Stop script
+├── setup_mobile.sh        # Mobile app setup script
 └── README.md              # This file
 ```
 
@@ -180,12 +223,14 @@ UpTimeMonitor/
 - **Outage Documentation**: Evidence for customer service calls
 - **Network Troubleshooting**: Identify connectivity patterns
 - **Service Quality**: Track long-term performance trends
+- **Mobile Monitoring**: Check status from anywhere
 
 ### For Small Businesses
 - **Network Monitoring**: Ensure reliable internet connectivity
 - **Performance Reporting**: Data for ISP negotiations
 - **Outage Planning**: Understand network reliability
 - **Cost Optimization**: Justify service upgrades
+- **Remote Management**: Monitor from mobile devices
 
 ## 🚀 **Deployment**
 
@@ -202,6 +247,11 @@ UpTimeMonitor/
 5. Set up reverse proxy (nginx)
 6. Configure SSL certificates
 7. Set up systemd services for auto-start
+
+### Mobile App Deployment
+- **iOS**: Build and submit to App Store
+- **Android**: Build and submit to Google Play Store
+- **Enterprise**: Distribute directly to devices
 
 ## 🤝 **Contributing**
 
@@ -221,10 +271,11 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - **speedtest-cli**: Professional speed testing library
 - **FastAPI**: Modern Python web framework
 - **React**: Frontend framework
+- **React Native**: Mobile app framework
 - **Tailwind CSS**: Utility-first CSS framework
 
 ---
 
 **Built with ❤️ for reliable internet monitoring**
 
-*Production ready with 68.6x speed test accuracy improvement*
+*Production ready with 68.6x speed test accuracy improvement and mobile app support*
