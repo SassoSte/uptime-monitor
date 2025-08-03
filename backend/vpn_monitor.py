@@ -176,15 +176,31 @@ class VPNMonitor:
             if result.returncode == 0:
                 interfaces = result.stdout.lower()
                 
+                # More specific VPN interface detection
                 for provider, signatures in self.vpn_providers.items():
                     for interface_name in signatures['interfaces']:
                         if interface_name in interfaces:
-                            return {
-                                'method': 'interface',
-                                'provider': provider,
-                                'confidence': 0.8,
-                                'details': f"Found {interface_name} interface"
-                            }
+                            # Additional validation for macOS: check if it's a real VPN interface
+                            if platform.system() == "Darwin" and interface_name.startswith('tun'):
+                                # For tun interfaces, check if they have VPN-specific characteristics
+                                # Look for VPN-related patterns in the interface details
+                                if f"{interface_name}:" in interfaces:
+                                    # Check if this interface has VPN-specific IP ranges or characteristics
+                                    # For now, we'll be more conservative and require additional evidence
+                                    return {
+                                        'method': 'interface',
+                                        'provider': provider,
+                                        'confidence': 0.4,  # Lower confidence for tun interfaces
+                                        'details': f"Found {interface_name} interface (needs validation)"
+                                    }
+                            else:
+                                # For non-tun interfaces (like nordlynx), higher confidence
+                                return {
+                                    'method': 'interface',
+                                    'provider': provider,
+                                    'confidence': 0.8,
+                                    'details': f"Found {interface_name} interface"
+                                }
             
             return {'method': 'interface', 'confidence': 0.0}
             
@@ -270,13 +286,21 @@ class VPNMonitor:
             if result.returncode == 0:
                 routing_table = result.stdout.lower()
                 
-                # Look for VPN routing patterns
+                # Look for VPN routing patterns - be more specific
                 vpn_patterns = [
-                    r'tun\d+',
-                    r'vpn',
-                    r'nordlynx',
-                    r'proton0'
+                    r'nordlynx',  # NordVPN specific
+                    r'proton0',   # ProtonVPN specific
+                    r'vpn',       # Generic VPN
                 ]
+                
+                # Be more conservative with tun patterns on macOS
+                if platform.system() == "Darwin":
+                    # On macOS, tun interfaces are common system interfaces
+                    # Only consider them VPN-related if we have other evidence
+                    pass
+                else:
+                    # On Linux, tun interfaces are more likely to be VPN-related
+                    vpn_patterns.append(r'tun\d+')
                 
                 for pattern in vpn_patterns:
                     if re.search(pattern, routing_table):
@@ -301,18 +325,81 @@ class VPNMonitor:
         total_confidence = sum(r.get('confidence', 0) for r in results)
         avg_confidence = total_confidence / len(results)
         
-        # Determine if VPN is active
-        is_active = avg_confidence > 0.3 or best_result.get('confidence', 0) > 0.6
-        
-        # Get provider from best result
-        provider = best_result.get('provider') if best_result.get('confidence', 0) > 0.5 else None
-        
         # Get public IP if available
         public_ip = None
         for result in results:
             if result.get('method') == 'ip' and result.get('public_ip'):
                 public_ip = result.get('public_ip')
                 break
+        
+        # IMPROVED DETECTION LOGIC:
+        # VPN is only considered active if we have strong evidence
+        is_active = False
+        provider = None
+        
+        # Check for strong indicators of active VPN
+        strong_indicators = []
+        for result in results:
+            if result.get('confidence', 0) >= 0.7:  # High confidence
+                strong_indicators.append(result)
+            elif result.get('method') == 'ip' and result.get('provider'):  # IP matches known VPN
+                strong_indicators.append(result)
+            elif result.get('method') == 'interface' and result.get('provider'):  # VPN interface found
+                strong_indicators.append(result)
+        
+        # VPN is active if we have strong indicators OR high overall confidence
+        if strong_indicators or avg_confidence > 0.6:
+            is_active = True
+            # Get provider from best strong indicator
+            if strong_indicators:
+                provider = strong_indicators[0].get('provider')
+            elif best_result.get('confidence', 0) > 0.5:
+                provider = best_result.get('provider')
+        
+        # Additional validation: If we have a public IP, check if it's actually a VPN IP
+        if public_ip and is_active:
+            # Check if the IP actually matches known VPN ranges
+            ip_matches_vpn = False
+            for result in results:
+                if result.get('method') == 'ip' and result.get('provider'):
+                    ip_matches_vpn = True
+                    break
+            
+            # If IP doesn't match any known VPN ranges, be more conservative
+            if not ip_matches_vpn:
+                # Only consider active if we have very strong process/interface evidence
+                strong_evidence = any(
+                    r.get('confidence', 0) >= 0.8 and r.get('method') in ['process', 'interface']
+                    for r in results
+                )
+                if not strong_evidence:
+                    is_active = False
+                    provider = None
+        
+        # FINAL VALIDATION: If we only have process detection but no VPN IP, be very conservative
+        if is_active and public_ip:
+            # Check if we have strong evidence beyond just process detection
+            has_strong_evidence = False
+            
+            # Look for interface detection with high confidence
+            for result in results:
+                if (result.get('method') == 'interface' and 
+                    result.get('confidence', 0) >= 0.7 and 
+                    result.get('provider')):
+                    has_strong_evidence = True
+                    break
+            
+            # Look for IP detection that matches VPN ranges
+            for result in results:
+                if (result.get('method') == 'ip' and 
+                    result.get('provider')):
+                    has_strong_evidence = True
+                    break
+            
+            # If we only have process detection and no VPN IP, don't consider it active
+            if not has_strong_evidence:
+                is_active = False
+                provider = None
         
         return VPNStatus(
             is_active=is_active,
