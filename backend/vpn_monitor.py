@@ -296,7 +296,67 @@ class VPNMonitor:
                     '186.246.0.0/16', '186.247.0.0/16', '186.248.0.0/16',
                     '186.249.0.0/16', '186.250.0.0/16', '186.251.0.0/16',
                     '186.252.0.0/16', '186.253.0.0/16', '186.254.0.0/16',
-                    '186.255.0.0/16'
+                    '186.255.0.0/16',
+                    # Dedicated IP ranges
+                    '86.38.197.0/24',  # Singapore dedicated IP range
+                    '86.38.198.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.199.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.200.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.201.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.202.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.203.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.204.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.205.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.206.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.207.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.208.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.209.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.210.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.211.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.212.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.213.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.214.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.215.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.216.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.217.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.218.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.219.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.220.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.221.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.222.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.223.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.224.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.225.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.226.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.227.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.228.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.229.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.230.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.231.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.232.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.233.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.234.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.235.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.236.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.237.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.238.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.239.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.240.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.241.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.242.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.243.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.244.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.245.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.246.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.247.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.248.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.249.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.250.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.251.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.252.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.253.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.254.0/24',  # Additional Singapore dedicated IPs
+                    '86.38.255.0/24'   # Additional Singapore dedicated IPs
                 ],
                 'dns_servers': ['103.86.96.100', '103.86.99.100'],
                 'signature_ips': [
@@ -384,7 +444,24 @@ class VPNMonitor:
                     '186.240.', '186.241.', '186.242.', '186.243.', '186.244.',
                     '186.245.', '186.246.', '186.247.', '186.248.', '186.249.',
                     '186.250.', '186.251.', '186.252.', '186.253.', '186.254.',
-                    '186.255.'
+                    '186.255.',
+                    # Dedicated IP signatures
+                    '86.38.197.',  # Singapore dedicated IP
+                    '86.38.198.', '86.38.199.', '86.38.200.', '86.38.201.',
+                    '86.38.202.', '86.38.203.', '86.38.204.', '86.38.205.',
+                    '86.38.206.', '86.38.207.', '86.38.208.', '86.38.209.',
+                    '86.38.210.', '86.38.211.', '86.38.212.', '86.38.213.',
+                    '86.38.214.', '86.38.215.', '86.38.216.', '86.38.217.',
+                    '86.38.218.', '86.38.219.', '86.38.220.', '86.38.221.',
+                    '86.38.222.', '86.38.223.', '86.38.224.', '86.38.225.',
+                    '86.38.226.', '86.38.227.', '86.38.228.', '86.38.229.',
+                    '86.38.230.', '86.38.231.', '86.38.232.', '86.38.233.',
+                    '86.38.234.', '86.38.235.', '86.38.236.', '86.38.237.',
+                    '86.38.238.', '86.38.239.', '86.38.240.', '86.38.241.',
+                    '86.38.242.', '86.38.243.', '86.38.244.', '86.38.245.',
+                    '86.38.246.', '86.38.247.', '86.38.248.', '86.38.249.',
+                    '86.38.250.', '86.38.251.', '86.38.252.', '86.38.253.',
+                    '86.38.254.', '86.38.255.'
                 ]
             },
             'expressvpn': {
