@@ -4,20 +4,46 @@
 
 Your UpTime Monitor application is now configured for easy future launches with all recent improvements included!
 
-## 🎯 **One-Command Startup**
+## 🎯 **Startup Options**
 
-For future launches, simply run:
+### **Option 1: Standard Startup (with logs)**
 ```bash
 cd /Users/stefansassoon/cursor-1/UpTimeMonitor
 ./start_app.sh
 ```
+- Shows all logs in real-time
+- Good for debugging and monitoring
+- Terminal will be occupied
 
-That's it! The script will:
-- ✅ Set up the correct PATH for Node.js
-- ✅ Activate the Python virtual environment
-- ✅ Start the backend API server
-- ✅ Start the React frontend
-- ✅ Verify everything is working
+### **Option 2: Quiet Background Startup (Recommended)**
+```bash
+cd /Users/stefansassoon/cursor-1/UpTimeMonitor
+./start_app_quiet.sh
+```
+- Runs in background with minimal console output
+- Logs saved to `logs/backend.log` and `logs/frontend.log`
+- Terminal remains free for other commands
+- **Recommended for daily use**
+
+### **Option 3: Manual Background Startup**
+```bash
+cd /Users/stefansassoon/cursor-1/UpTimeMonitor
+./start_app.sh &
+```
+
+## 🛑 **Stopping the Application**
+
+### **Easy Stop (Recommended)**
+```bash
+./stop_app.sh
+```
+
+### **Manual Stop**
+```bash
+# Find and kill processes
+ps aux | grep -E "(python.*main|npm.*start)" | grep -v grep
+kill [PID_NUMBERS]
+```
 
 ## 🔧 **First-Time Setup (One-time only)**
 
@@ -52,13 +78,20 @@ Once started, access your application at:
 - **API Documentation**: http://localhost:8000/docs
 - **Health Check**: http://localhost:8000/api/health
 
+## 📄 **Log Files**
+
+When using the quiet startup option:
+- **Backend logs**: `logs/backend.log`
+- **Frontend logs**: `logs/frontend.log`
+- **View logs**: `tail -f logs/backend.log` or `tail -f logs/frontend.log`
+
 ## 🛠️ **Troubleshooting**
 
 ### If the startup script fails:
 1. **Check directory**: Make sure you're in `/Users/stefansassoon/cursor-1/UpTimeMonitor`
 2. **Check dependencies**: Run `./setup_env.sh` to reinstall
 3. **Check ports**: Ensure ports 3000 and 8000 are available
-4. **Check logs**: Look for error messages in the terminal output
+4. **Check logs**: Look for error messages in the terminal output or log files
 
 ### Common Issues:
 - **Node.js not found**: The script will automatically set the PATH
