@@ -36,5 +36,49 @@
     "server_selection": "auto",
     "fallback_method": "http_calibrated",
     "calibration_factor": 15.0
+  },
+  "vpn_monitoring": {
+    "enabled": true,
+    "check_interval_seconds": 30,
+    "providers": {
+      "nordvpn": {
+        "enabled": true,
+        "process_names": ["nordvpn", "nordvpnd"],
+        "interface_names": ["nordlynx", "tun0", "tun1"],
+        "ip_ranges": ["185.93.185.0/24", "185.93.186.0/24"],
+        "dns_servers": ["103.86.96.100", "103.86.99.100"]
+      },
+      "expressvpn": {
+        "enabled": true,
+        "process_names": ["expressvpn", "expressvpnd"],
+        "interface_names": ["tun0", "tun1"],
+        "ip_ranges": ["45.67.0.0/16"],
+        "dns_servers": ["10.0.0.1"]
+      },
+      "protonvpn": {
+        "enabled": true,
+        "process_names": ["protonvpn", "protonvpnd"],
+        "interface_names": ["proton0", "tun0"],
+        "ip_ranges": ["37.19.0.0/16"],
+        "dns_servers": ["10.2.0.1"]
+      },
+      "surfshark": {
+        "enabled": true,
+        "process_names": ["surfshark", "surfsharkd"],
+        "interface_names": ["surfshark", "tun0"],
+        "ip_ranges": ["185.199.0.0/16"],
+        "dns_servers": ["162.252.172.57"]
+      }
+    },
+    "speed_test_impact": {
+      "expected_reduction_percent": 15,
+      "alert_threshold_percent": 30,
+      "separate_reporting": true
+    },
+    "alerts": {
+      "vpn_connected": true,
+      "vpn_disconnected": true,
+      "speed_impact": true
+    }
   }
 }

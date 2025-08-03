@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Wifi, Zap, Clock, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Wifi, Zap, Clock, AlertTriangle, RefreshCw, Shield } from 'lucide-react';
 import MetricCard from '../components/MetricCard';
 import StatusIndicator from '../components/StatusIndicator';
+import VPNDashboard from '../components/VPNDashboard';
 import { format } from 'date-fns';
 
 const Dashboard = () => {
@@ -12,6 +13,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [usingRealData, setUsingRealData] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview'); // 'overview' or 'vpn'
 
   // Memoized demo data to avoid recreating Date objects repeatedly
   const demoData = useMemo(() => ({
@@ -26,6 +28,13 @@ const Dashboard = () => {
         upload_mbps: 15.2,
         ping_ms: 28,
         server_location: 'Seattle, WA, United States'
+      },
+      vpn_status: {
+        is_active: false,
+        provider: null,
+        public_ip: '192.168.1.100',
+        confidence: 0.95,
+        detection_method: 'ip'
       }
     },
     uptimeChartData: [
@@ -98,240 +107,256 @@ const Dashboard = () => {
         setUptimeChartData(uptimeData);
         setSpeedChartData(speedData);
         setUsingRealData(true);
+        return true;
       } else {
-        throw new Error('API not available');
+        throw new Error('Chart API not available');
       }
     } catch (error) {
       console.log('Chart API not available, using demo data');
       setUptimeChartData(demoData.uptimeChartData);
       setSpeedChartData(demoData.speedChartData);
       setUsingRealData(false);
+      return false;
     }
   };
 
   const refreshData = async () => {
     setLoading(true);
-    await Promise.all([fetchDashboardData(), fetchChartData()]);
     setLastUpdated(new Date());
+    
+    const dashboardSuccess = await fetchDashboardData();
+    const chartSuccess = await fetchChartData();
+    
     setLoading(false);
+    
+    if (!dashboardSuccess && !chartSuccess) {
+      // If both failed, we're definitely using demo data
+      setUsingRealData(false);
+    }
   };
 
   useEffect(() => {
     refreshData();
     
-    // Auto-refresh every 2 minutes instead of 30 seconds to reduce CPU usage
-    const interval = setInterval(refreshData, 120000);
+    // Set up auto-refresh every 30 seconds
+    const interval = setInterval(refreshData, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  if (loading || !dashboardData) {
+  const getUptimeStatus = (uptime) => {
+    if (uptime >= 99) return 'excellent';
+    if (uptime >= 95) return 'good';
+    if (uptime >= 90) return 'fair';
+    return 'poor';
+  };
+
+  const getSpeedStatus = (speed) => {
+    if (speed >= 100) return 'excellent';
+    if (speed >= 50) return 'good';
+    if (speed >= 25) return 'fair';
+    return 'poor';
+  };
+
+  const getVPNStatusColor = (isActive) => {
+    return isActive ? 'text-green-600' : 'text-gray-600';
+  };
+
+  const getVPNStatusIcon = (isActive) => {
+    return isActive ? '🔒' : '🔓';
+  };
+
+  if (loading) {
     return (
-      <div className="flex-1 p-8">
-        <div className="max-w-7xl mx-auto space-y-6">
-          <div className="loading-skeleton h-8 w-64"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="loading-skeleton h-32"></div>
-            ))}
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-32 bg-gray-200 rounded"></div>
+              ))}
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="h-80 bg-gray-200 rounded"></div>
+              <div className="h-80 bg-gray-200 rounded"></div>
+            </div>
           </div>
-          <div className="loading-skeleton h-96"></div>
         </div>
       </div>
     );
   }
 
-  const getUptimeStatus = (uptime) => {
-    if (uptime >= 99) return 'good';
-    if (uptime >= 95) return 'warning';
-    return 'error';
-  };
-
-  const getSpeedStatus = (speed) => {
-    if (!speed) return 'normal';
-    if (speed >= 50) return 'good';
-    if (speed >= 10) return 'warning';
-    return 'error';
-  };
-
   return (
-    <div className="flex-1 overflow-auto custom-scrollbar">
-      <div className="p-8">
-        <div className="max-w-7xl mx-auto space-y-8">
-          {/* Connection Status Banner */}
-          <div className={`rounded-lg p-4 border ${
-            usingRealData 
-              ? 'bg-green-50 border-green-200' 
-              : 'bg-blue-50 border-blue-200'
-          }`}>
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                  usingRealData ? 'bg-green-600' : 'bg-blue-600'
-                }`}>
-                  <span className="text-white text-sm font-medium">
-                    {usingRealData ? '🌐' : '✨'}
-                  </span>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Network Monitor</h1>
+            <p className="text-gray-600 mt-1">
+              Real-time monitoring of your internet connection
+              {!usingRealData && (
+                <span className="ml-2 text-orange-600 text-sm">
+                  (Demo Mode - Backend not connected)
+                </span>
+              )}
+            </p>
+          </div>
+          <div className="flex items-center space-x-4 mt-4 sm:mt-0">
+            <div className="text-sm text-gray-500">
+              Last updated: {format(lastUpdated, 'HH:mm:ss')}
+            </div>
+            <button
+              onClick={refreshData}
+              disabled={loading}
+              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              <span>Refresh</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="flex space-x-1 bg-white rounded-lg p-1 mb-6 shadow-sm">
+          <button
+            onClick={() => setActiveTab('overview')}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeTab === 'overview'
+                ? 'bg-blue-100 text-blue-700'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            <Wifi className="w-4 h-4" />
+            <span>Overview</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('vpn')}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeTab === 'vpn'
+                ? 'bg-blue-100 text-blue-700'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            <Shield className="w-4 h-4" />
+            <span>VPN Monitor</span>
+          </button>
+        </div>
+
+        {activeTab === 'overview' ? (
+          <>
+            {/* Status Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <MetricCard
+                title="Connection Status"
+                value={dashboardData?.current_status || 'unknown'}
+                icon={<Wifi className="w-6 h-6" />}
+                status={dashboardData?.current_status === 'connected' ? 'good' : 'poor'}
+                subtitle={`Latency: ${dashboardData?.current_latency?.toFixed(1) || 'N/A'} ms`}
+              />
+              
+              <MetricCard
+                title="24h Uptime"
+                value={`${dashboardData?.uptime_24h?.toFixed(1) || 0}%`}
+                icon={<Clock className="w-6 h-6" />}
+                status={getUptimeStatus(dashboardData?.uptime_24h || 0)}
+                subtitle={`${dashboardData?.total_outages_24h || 0} outages`}
+              />
+              
+              <MetricCard
+                title="Avg Speed"
+                value={`${dashboardData?.avg_speed_24h?.toFixed(1) || 0} Mbps`}
+                icon={<Zap className="w-6 h-6" />}
+                status={getSpeedStatus(dashboardData?.avg_speed_24h || 0)}
+                subtitle="Download speed"
+              />
+
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-2">
+                    <Shield className="w-6 h-6 text-gray-600" />
+                    <h3 className="text-lg font-semibold text-gray-800">VPN Status</h3>
+                  </div>
                 </div>
-              </div>
-              <div className="ml-3">
-                <h3 className={`text-sm font-medium ${
-                  usingRealData ? 'text-green-800' : 'text-blue-800'
-                }`}>
-                  {usingRealData ? 'Live Monitoring Active' : 'Demo Mode'}
-                </h3>
-                <p className={`text-sm ${
-                  usingRealData ? 'text-green-600' : 'text-blue-600'
-                }`}>
-                  {usingRealData 
-                    ? 'Showing real-time data from your internet connection'
-                    : 'Backend starting up... Using sample data for now'
-                  }
-                </p>
+                
+                {dashboardData?.vpn_status ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Status:</span>
+                      <span className={`font-semibold ${getVPNStatusColor(dashboardData.vpn_status.is_active)}`}>
+                        {getVPNStatusIcon(dashboardData.vpn_status.is_active)} {dashboardData.vpn_status.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                    
+                    {dashboardData.vpn_status.provider && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600">Provider:</span>
+                        <span className="font-semibold text-gray-800">
+                          {dashboardData.vpn_status.provider.toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Confidence:</span>
+                      <span className="font-semibold text-gray-800">
+                        {(dashboardData.vpn_status.confidence * 100).toFixed(0)}%
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center text-gray-500 py-4">
+                    No VPN data available
+                  </div>
+                )}
               </div>
             </div>
-          </div>
 
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Internet Monitor Dashboard</h1>
-              <p className="text-gray-500 mt-1">
-                {usingRealData 
-                  ? 'Real-time monitoring of your internet connection and performance'
-                  : 'Demo interface - Connect backend for live monitoring'
-                }
-              </p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="text-sm text-gray-500">
-                Last updated: {format(lastUpdated, 'HH:mm:ss')}
-              </div>
-              <button 
-                onClick={refreshData}
-                className="btn-secondary"
-                disabled={loading}
-              >
-                <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                {usingRealData ? 'Refresh Data' : 'Check Backend'}
-              </button>
-            </div>
-          </div>
-
-          {/* Status Overview */}
-          <div className="notion-card p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900">Current Status</h2>
-                <p className="text-gray-500">
-                  {usingRealData 
-                    ? 'Your internet connection status right now'
-                    : 'Sample connection status'
-                  }
-                </p>
-              </div>
-              <StatusIndicator status={dashboardData.current_status} size="lg" />
-            </div>
-          </div>
-
-          {/* Metrics Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <MetricCard
-              title="24h Uptime"
-              value={dashboardData.uptime_24h}
-              unit="%"
-              icon={Wifi}
-              status={getUptimeStatus(dashboardData.uptime_24h)}
-            />
-            
-            <MetricCard
-              title="Average Speed"
-              value={dashboardData.avg_speed_24h || 0}
-              unit="Mbps"
-              icon={Zap}
-              status={getSpeedStatus(dashboardData.avg_speed_24h)}
-            />
-            
-            <MetricCard
-              title="Current Latency"
-              value={dashboardData.current_latency || 0}
-              unit="ms"
-              icon={Clock}
-              status={dashboardData.current_latency > 100 ? 'warning' : 'good'}
-            />
-            
-            <MetricCard
-              title="Outages (24h)"
-              value={dashboardData.total_outages_24h}
-              icon={AlertTriangle}
-              status={dashboardData.total_outages_24h > 0 ? 'error' : 'good'}
-            />
-          </div>
-
-          {/* Charts */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Uptime Chart */}
-            <div className="chart-container">
-              <div className="chart-header">
-                <h3 className="text-lg font-semibold text-gray-900">24-Hour Uptime</h3>
-                <div className="text-sm text-gray-500">
-                  {usingRealData ? 'Live data' : 'Sample data'}
-                </div>
-              </div>
-              <div className="chart-content">
+            {/* Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Uptime Trend (24h)</h3>
                 <ResponsiveContainer width="100%" height={300}>
                   <AreaChart data={uptimeChartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <CartesianGrid strokeDasharray="3 3" />
                     <XAxis 
                       dataKey="timestamp" 
                       tickFormatter={(value) => format(new Date(value), 'HH:mm')}
-                      stroke="#6b7280"
                     />
-                    <YAxis 
-                      domain={[0, 100]}
-                      stroke="#6b7280"
-                    />
+                    <YAxis domain={[0, 100]} />
                     <Tooltip 
-                      labelFormatter={(value) => format(new Date(value), 'MMM dd, HH:mm')}
-                      formatter={(value) => [`${value.toFixed(1)}%`, 'Uptime']}
+                      labelFormatter={(value) => format(new Date(value), 'HH:mm:ss')}
+                      formatter={(value) => [`${value}%`, 'Uptime']}
                     />
                     <Area 
                       type="monotone" 
                       dataKey="value" 
-                      stroke="#3b82f6" 
-                      fill="#dbeafe"
-                      strokeWidth={2}
+                      stroke="#3B82F6" 
+                      fill="#3B82F6" 
+                      fillOpacity={0.3}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
-            </div>
 
-            {/* Speed Chart */}
-            <div className="chart-container">
-              <div className="chart-header">
-                <h3 className="text-lg font-semibold text-gray-900">Download Speed</h3>
-                <div className="text-sm text-gray-500">
-                  {usingRealData ? 'Live speed tests' : 'Sample tests'}
-                </div>
-              </div>
-              <div className="chart-content">
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Speed Trend (24h)</h3>
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={speedChartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <CartesianGrid strokeDasharray="3 3" />
                     <XAxis 
                       dataKey="timestamp" 
                       tickFormatter={(value) => format(new Date(value), 'HH:mm')}
-                      stroke="#6b7280"
                     />
-                    <YAxis stroke="#6b7280" />
+                    <YAxis />
                     <Tooltip 
-                      labelFormatter={(value) => format(new Date(value), 'MMM dd, HH:mm')}
-                      formatter={(value) => [`${value.toFixed(1)} Mbps`, 'Download Speed']}
+                      labelFormatter={(value) => format(new Date(value), 'HH:mm:ss')}
+                      formatter={(value) => [`${value} Mbps`, 'Speed']}
                     />
                     <Line 
                       type="monotone" 
                       dataKey="value" 
-                      stroke="#10b981" 
+                      stroke="#10B981" 
                       strokeWidth={2}
                       dot={false}
                     />
@@ -339,42 +364,40 @@ const Dashboard = () => {
                 </ResponsiveContainer>
               </div>
             </div>
-          </div>
 
-          {/* Recent Speed Test */}
-          {dashboardData.last_speed_test && (
-            <div className="notion-card p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                {usingRealData ? 'Latest Speed Test' : 'Sample Speed Test Results'}
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">
-                    {dashboardData.last_speed_test.download_mbps?.toFixed(1) || 'N/A'}
+            {/* Last Speed Test */}
+            {dashboardData?.last_speed_test && (
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Last Speed Test</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-blue-600">
+                      {dashboardData.last_speed_test.download_mbps.toFixed(1)}
+                    </div>
+                    <div className="text-sm text-gray-600">Download (Mbps)</div>
                   </div>
-                  <div className="text-sm text-gray-500">Download (Mbps)</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">
-                    {dashboardData.last_speed_test.upload_mbps?.toFixed(1) || 'N/A'}
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-green-600">
+                      {dashboardData.last_speed_test.upload_mbps.toFixed(1)}
+                    </div>
+                    <div className="text-sm text-gray-600">Upload (Mbps)</div>
                   </div>
-                  <div className="text-sm text-gray-500">Upload (Mbps)</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-yellow-600">
-                    {dashboardData.last_speed_test.ping_ms?.toFixed(0) || 'N/A'}
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-purple-600">
+                      {dashboardData.last_speed_test.ping_ms.toFixed(1)}
+                    </div>
+                    <div className="text-sm text-gray-600">Ping (ms)</div>
                   </div>
-                  <div className="text-sm text-gray-500">Ping (ms)</div>
                 </div>
-              </div>
-              {dashboardData.last_speed_test.server_location && (
-                <div className="mt-4 text-sm text-gray-500 text-center">
+                <div className="mt-4 text-center text-sm text-gray-600">
                   Server: {dashboardData.last_speed_test.server_location}
                 </div>
-              )}
-            </div>
-          )}
-        </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <VPNDashboard />
+        )}
       </div>
     </div>
   );
